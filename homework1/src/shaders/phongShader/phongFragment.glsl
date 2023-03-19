@@ -19,6 +19,7 @@ varying highp vec3 vNormal;
 #define BLOCKER_SEARCH_NUM_SAMPLES NUM_SAMPLES
 #define PCF_NUM_SAMPLES NUM_SAMPLES
 #define NUM_RINGS 10
+#define LIGHT_WIDTH 1.0
 
 #define EPS 1e-3
 #define PI 3.141592653589793
@@ -83,8 +84,23 @@ void uniformDiskSamples( const in vec2 randomSeed ) {
   }
 }
 
-float findBlocker( sampler2D shadowMap,  vec2 uv, float zReceiver ) {
-	return 1.0;
+float findBlocker( sampler2D shadowMap,  vec2 uv, float zReceiver, float filterSize ) {
+  poissonDiskSamples(vec2(0, 0));
+  int cnt = 0;
+  float totalDepth = 0.0; 
+  for (int i = 0; i < NUM_SAMPLES; i++)  {
+      vec2 sample = poissonDisk[i] * vec2(filterSize) + uv; 
+      vec4 mapDepth = texture2D(shadowMap, sample);
+      float depth = unpack(mapDepth);
+      if (depth < zReceiver) {
+        cnt += 1;
+        totalDepth += depth;
+      }
+  }
+  if (cnt == 0) {
+    return 1.0;
+  }
+  return totalDepth / float(cnt);
 }
 
 float PCF(sampler2D shadowMap, vec4 coords, float filterSize) {
@@ -107,13 +123,13 @@ float PCF(sampler2D shadowMap, vec4 coords, float filterSize) {
 float PCSS(sampler2D shadowMap, vec4 coords){
 
   // STEP 1: avgblocker depth
-
+  float curDepth = coords.z;
+  float avgBlockDepth = findBlocker(shadowMap, coords.xy, curDepth, 0.0125);
   // STEP 2: penumbra size
-
+  float w = (coords.z - avgBlockDepth) * float(LIGHT_WIDTH) / avgBlockDepth;
   // STEP 3: filtering
-  
-  return 1.0;
-
+  return PCF(shadowMap, coords, 0.0125 * w);
+  // 0.0125: say 100x100 grid, filter size 4x4
 }
 
 
@@ -154,8 +170,8 @@ void main(void) {
   // 此时坐标为NDC坐标系，范围[-1, 1], 需要转换到uv坐标系(一种二维纹理坐标系统)， 通常取值范围是[0, 1].
   shadowCoord = (shadowCoord + vec3(1.0)) * 0.5;
   //visibility = useShadowMap(uShadowMap, vec4(shadowCoord, 1.0));
-  visibility = PCF(uShadowMap, vec4(shadowCoord, 1.0), 0.0125);
-  //visibility = PCSS(uShadowMap, vec4(shadowCoord, 1.0));
+  //visibility = PCF(uShadowMap, vec4(shadowCoord, 1.0), 0.0125);
+  visibility = PCSS(uShadowMap, vec4(shadowCoord, 1.0));
 
   vec3 phongColor = blinnPhong();
 
