@@ -87,8 +87,21 @@ float findBlocker( sampler2D shadowMap,  vec2 uv, float zReceiver ) {
 	return 1.0;
 }
 
-float PCF(sampler2D shadowMap, vec4 coords) {
-  return 1.0;
+float PCF(sampler2D shadowMap, vec4 coords, float filterSize) {
+  poissonDiskSamples(vec2(0.0, 0.0));
+  //uniformDiskSamples(coords.xy);
+  float totalVisibility = 0.0;
+  float curDepth = coords.z;
+  for (int i = 0; i < NUM_SAMPLES; i++)  {
+      vec2 sample = poissonDisk[i] * vec2(filterSize) + coords.xy; 
+      vec4 mapDepth = texture2D(shadowMap, sample);
+      float depth = unpack(mapDepth);
+      if (curDepth < depth) {
+        totalVisibility += 1.0;
+      }
+  }
+  return totalVisibility / float(NUM_SAMPLES);
+
 }
 
 float PCSS(sampler2D shadowMap, vec4 coords){
@@ -105,12 +118,10 @@ float PCSS(sampler2D shadowMap, vec4 coords){
 
 
 float useShadowMap(sampler2D shadowMap, vec4 shadowCoord){
-  // float mapDepth = unpack(texture2D(shadowMap, shadowCoord.xy));
   vec4 mapDepth = texture2D(shadowMap, shadowCoord.xy);
   float depth = unpack(mapDepth);
   float curDepth = shadowCoord.z;
   return curDepth < depth ? 1.0 : 0.0;
-  return 1.0;
 }
 
 vec3 blinnPhong() {
@@ -142,8 +153,8 @@ void main(void) {
   vec3 shadowCoord = vPositionFromLight.xyz / vPositionFromLight.w;
   // 此时坐标为NDC坐标系，范围[-1, 1], 需要转换到uv坐标系(一种二维纹理坐标系统)， 通常取值范围是[0, 1].
   shadowCoord = (shadowCoord + vec3(1.0)) * 0.5;
-  visibility = useShadowMap(uShadowMap, vec4(shadowCoord, 1.0));
-  //visibility = PCF(uShadowMap, vec4(shadowCoord, 1.0));
+  //visibility = useShadowMap(uShadowMap, vec4(shadowCoord, 1.0));
+  visibility = PCF(uShadowMap, vec4(shadowCoord, 1.0), 0.0125);
   //visibility = PCSS(uShadowMap, vec4(shadowCoord, 1.0));
 
   vec3 phongColor = blinnPhong();
