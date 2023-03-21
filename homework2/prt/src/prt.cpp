@@ -130,7 +130,7 @@ namespace ProjEnv
                     float area = CalcArea(x, y, width, height);
                     for (int l = 0; l <= SHOrder; l++) {
                         for (int m = -l; m <= l; m++) {
-                            SHCoeffiecents[sh::GetIndex(l, m)] += Le * sh::EvalSH(l, m, dir.cast<double>()) * area;
+                            SHCoeffiecents[sh::GetIndex(l, m)] += Le * sh::EvalSH(l, m, Eigen::Vector3d(dir.x(), dir.y(), dir.z()).normalized()) * area;
                         }
                     }
                 }
@@ -214,12 +214,16 @@ public:
                 {
                     // TODO: here you need to calculate unshadowed transport term of a given direction
                     // TODO: 此处你需要计算给定方向下的unshadowed传输项球谐函数值
-                    return 0;
+                    double H = n.normalized().dot(wi.normalized());
+                    return H ? H > 0.0 : 0.0;
                 }
                 else
                 {
                     // TODO: here you need to calculate shadowed transport term of a given direction
                     // TODO: 此处你需要计算给定方向下的shadowed传输项球谐函数值
+                    scene -> Ray
+                    //    bool rayIntersect(const Ray3f &ray, Intersection &its) const {
+                    //        return m_accel->rayIntersect(ray, its, false); }
                     return 0;
                 }
             };
