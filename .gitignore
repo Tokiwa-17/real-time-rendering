@@ -1,3 +1,5 @@
 *.pdf
 **/assets/
 **/lib/
+**/build/
+**/.vscode/

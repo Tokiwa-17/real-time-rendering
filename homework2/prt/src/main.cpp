@@ -160,14 +160,14 @@ static void render(Scene *scene, const std::string &filename)
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
-        cerr << "Syntax: " << argv[0] << " <scene.xml>" << endl;
-        return -1;
-    }
+    // if (argc < 2) {
+    //     cerr << "Syntax: " << argv[0] << " <scene.xml>" << endl;
+    //     return -1;
+    // }
 
     std::string sceneName = "";
-
-    for (int i = 1; i < argc; ++i)
+    argv[0] = "D:\\Github\\real-time rendering\\homework2\\prt\\scenes\\prt.xml";
+    for (int i = 0; i < argc; ++i)
     {
         std::string token(argv[i]);
         if (token == "-t" || token == "--threads")

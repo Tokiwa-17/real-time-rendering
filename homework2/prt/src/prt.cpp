@@ -87,15 +87,13 @@ namespace ProjEnv
         return angle;
     }
 
-    // template <typename T> T ProjectSH() {}
-
     template <size_t SHOrder>
     std::vector<Eigen::Array3f> PrecomputeCubemapSH(const std::vector<std::unique_ptr<float[]>> &images,
                                                     const int &width, const int &height,
                                                     const int &channel)
     {
         std::vector<Eigen::Vector3f> cubemapDirs;
-        cubemapDirs.reserve(6 * width * height);
+        cubemapDirs.reserve(6 * width * height); // 增加 vector 的容量
         for (int i = 0; i < 6; i++)
         {
             Eigen::Vector3f faceDirX = cubemapFaceDirections[i][0];
@@ -129,6 +127,12 @@ namespace ProjEnv
                     int index = (y * width + x) * channel;
                     Eigen::Array3f Le(images[i][index + 0], images[i][index + 1],
                                       images[i][index + 2]);
+                    float area = CalcArea(x, y, width, height);
+                    for (int l = 0; l <= SHOrder; l++) {
+                        for (int m = -l; m <= l; m++) {
+                            SHCoeffiecents[sh::GetIndex(l, m)] += Le * sh::EvalSH(l, m, dir.cast<double>()) * area;
+                        }
+                    }
                 }
             }
         }
